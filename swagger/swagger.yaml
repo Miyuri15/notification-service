@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  title: Notification Service API
+  version: 1.0.0
+  description: API documentation for notification-service
+
+servers:
+  - url: http://localhost:8085
+
+paths:
+  /api/notifications/health:
+    get:
+      summary: Health check
+      responses:
+        200:
+          description: Service is healthy
+
+  /api/notifications/send:
+    post:
+      summary: Send notification from another service
+      parameters:
+        - in: header
+          name: x-service-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        201:
+          description: Notification created
+
+  /api/notifications/user/{userId}:
+    get:
+      summary: Get notifications for a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of notifications
+
+  /api/notifications/{id}/read:
+    patch:
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Notification updated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    NotificationRequest:
+      type: object
+      required:
+        - userId
+        - type
+        - title
+        - message
+      properties:
+        userId:
+          type: string
+          example: 67d7d4dcf89bc5fbeb0bf12a
+        type:
+          type: string
+          example: BOOKING_CONFIRMATION
+        title:
+          type: string
+          example: Booking confirmed
+        message:
+          type: string
+          example: Your reservation is confirmed.
+        channel:
+          type: string
+          example: IN_APP
+        status:
+          type: string
+          example: UNREAD
