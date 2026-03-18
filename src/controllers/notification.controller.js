@@ -9,8 +9,28 @@ async function sendNotification(req, res) {
   }
 }
 
+async function sendEventNotification(req, res) {
+  try {
+    const notifications = await notificationService.createNotificationsForEvent(
+      req.body,
+    );
+    res.status(201).json({
+      count: notifications.length,
+      notifications,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+}
+
 async function getUserNotifications(req, res) {
   try {
+    if (req.user.role !== "ADMIN" && req.user.id !== req.params.userId) {
+      return res.status(403).json({
+        message: "You are not authorized to access this notification feed",
+      });
+    }
+
     const notifications = await notificationService.getNotificationsByUser(
       req.params.userId,
     );
@@ -22,7 +42,7 @@ async function getUserNotifications(req, res) {
 
 async function markNotificationRead(req, res) {
   try {
-    const notification = await notificationService.markAsRead(req.params.id);
+    const notification = await notificationService.markAsRead(req.params.id, req.user);
 
     if (!notification) {
       return res.status(404).json({ message: "Notification not found" });
@@ -40,6 +60,7 @@ function healthCheck(req, res) {
 
 module.exports = {
   sendNotification,
+  sendEventNotification,
   getUserNotifications,
   markNotificationRead,
   healthCheck,

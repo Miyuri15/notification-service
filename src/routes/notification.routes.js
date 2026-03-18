@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get("/health", controller.healthCheck);
 router.post("/send", serviceAuth, controller.sendNotification);
+router.post("/events", serviceAuth, controller.sendEventNotification);
 router.get("/user/:userId", auth, controller.getUserNotifications);
 router.patch("/:id/read", auth, controller.markNotificationRead);
 
