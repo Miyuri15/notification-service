@@ -11,6 +11,16 @@ const SUPPORTED_EVENT_TYPES = {
     buildMessage: (metadata) =>
       `Your booking${formatEntitySuffix(metadata.bookingId, "booking")} has been confirmed${formatEventSuffix(metadata.eventTitle)}.`,
   },
+  BOOKING_UPDATED: {
+    title: "Booking updated",
+    buildMessage: (metadata) =>
+      `Your booking${formatEntitySuffix(metadata.bookingId, "booking")} has been updated${formatEventSuffix(metadata.eventTitle)}${formatSeatSuffix(metadata.numberOfTickets)}${formatBookingStateSuffix(metadata)}.`,
+  },
+  BOOKING_CANCELLED: {
+    title: "Booking cancelled",
+    buildMessage: (metadata) =>
+      `Your booking${formatEntitySuffix(metadata.bookingId, "booking")} has been cancelled${formatEventSuffix(metadata.eventTitle)}${formatSeatSuffix(metadata.numberOfTickets)}.`,
+  },
   BOOKING_DELETED: {
     title: "Booking deleted",
     buildMessage: (metadata) =>
@@ -53,6 +63,24 @@ function formatEventSuffix(eventTitle) {
 
 function formatNamedSuffix(name, fallbackLabel) {
   return name ? ` \"${name}\"` : ` (${fallbackLabel})`;
+}
+
+function formatSeatSuffix(numberOfTickets) {
+  return numberOfTickets ? ` for ${numberOfTickets} seat(s)` : "";
+}
+
+function formatBookingStateSuffix(metadata) {
+  const parts = [];
+
+  if (metadata.bookingStatus) {
+    parts.push(`booking status: ${metadata.bookingStatus}`);
+  }
+
+  if (metadata.paymentStatus) {
+    parts.push(`payment status: ${metadata.paymentStatus}`);
+  }
+
+  return parts.length ? ` (${parts.join(', ')})` : "";
 }
 
 function formatAmountSuffix(metadata) {

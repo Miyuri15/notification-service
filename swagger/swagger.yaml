@@ -2,28 +2,37 @@ openapi: 3.0.0
 info:
   title: Notification Service API
   version: 1.0.0
-  description: API documentation for notification-service
+  description: API documentation for the Event Booking notification service
 
 servers:
   - url: http://localhost:8085
+    description: Local development server
+
+tags:
+  - name: Notification Service
+    description: Endpoints for creating and managing user notifications
 
 paths:
   /api/notifications/health:
     get:
+      tags:
+        - Notification Service
       summary: Health check
       responses:
         200:
           description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
 
   /api/notifications/send:
     post:
+      tags:
+        - Notification Service
       summary: Send notification from another service
-      parameters:
-        - in: header
-          name: x-service-token
-          required: true
-          schema:
-            type: string
+      security:
+        - serviceTokenAuth: []
       requestBody:
         required: true
         content:
@@ -33,9 +42,49 @@ paths:
       responses:
         201:
           description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        500:
+          description: Failed to create notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/notifications/events:
+    post:
+      tags:
+        - Notification Service
+      summary: Generate notifications for a system event
+      description: Resolves recipients through the user service and creates one notification per resolved recipient.
+      security:
+        - serviceTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventNotificationRequest'
+      responses:
+        201:
+          description: Event notifications created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventNotificationResponse'
+        400:
+          description: Invalid event payload or no recipients resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/notifications/user/{userId}:
     get:
+      tags:
+        - Notification Service
       summary: Get notifications for a user
       security:
         - bearerAuth: []
@@ -48,9 +97,29 @@ paths:
       responses:
         200:
           description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        403:
+          description: Authenticated user cannot access this notification feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Failed to load notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/notifications/{id}/read:
     patch:
+      tags:
+        - Notification Service
       summary: Mark notification as read
       security:
         - bearerAuth: []
@@ -63,6 +132,22 @@ paths:
       responses:
         200:
           description: Notification updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        404:
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Failed to update notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -70,7 +155,69 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    serviceTokenAuth:
+      type: apiKey
+      in: header
+      name: x-service-token
   schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Something went wrong
+    Notification:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 67d7d4dcf89bc5fbeb0bf12a
+        userId:
+          type: string
+          example: 67d7d4dcf89bc5fbeb0bf12a
+        type:
+          type: string
+          example: BOOKING_CONFIRMATION
+        title:
+          type: string
+          example: Booking confirmed
+        message:
+          type: string
+          example: Your reservation is confirmed.
+        channel:
+          type: string
+          enum:
+            - EMAIL
+            - SMS
+            - IN_APP
+          example: IN_APP
+        status:
+          type: string
+          enum:
+            - UNREAD
+            - READ
+            - SENT
+            - FAILED
+          example: UNREAD
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            source: booking-service
+            eventType: BOOKING_CONFIRMED
+            bookingId: BK-1001
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     NotificationRequest:
       type: object
       required:
@@ -93,7 +240,115 @@ components:
           example: Your reservation is confirmed.
         channel:
           type: string
+          enum:
+            - EMAIL
+            - SMS
+            - IN_APP
           example: IN_APP
         status:
           type: string
+          enum:
+            - UNREAD
+            - READ
+            - SENT
+            - FAILED
           example: UNREAD
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            bookingId: BK-1001
+            source: booking-service
+    NotificationRecipients:
+      type: object
+      properties:
+        userId:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example:
+            - 67d7d4dcf89bc5fbeb0bf12a
+        userIds:
+          type: array
+          items:
+            type: string
+          example:
+            - 67d7d4dcf89bc5fbeb0bf12a
+            - 67d7d4dcf89bc5fbeb0bf12b
+        roles:
+          type: array
+          items:
+            type: string
+          example:
+            - ADMIN
+            - ORGANIZER
+    EventNotificationRequest:
+      type: object
+      required:
+        - eventType
+      properties:
+        eventType:
+          type: string
+          enum:
+            - BOOKING_PENDING
+            - BOOKING_CONFIRMED
+            - BOOKING_DELETED
+            - EVENT_CREATED
+            - EVENT_UPDATED
+            - EVENT_REMOVED
+            - PAYMENT_RECEIVED
+            - PAYMENT_CANCELLED
+          example: BOOKING_CONFIRMED
+        userId:
+          type: string
+          description: Optional fallback single recipient ID.
+          example: 67d7d4dcf89bc5fbeb0bf12a
+        recipients:
+          $ref: '#/components/schemas/NotificationRecipients'
+        title:
+          type: string
+          description: Optional title override.
+          example: Booking confirmed
+        message:
+          type: string
+          description: Optional message override.
+          example: Your booking BK-1001 has been confirmed for Spring Gala.
+        channel:
+          type: string
+          enum:
+            - EMAIL
+            - SMS
+            - IN_APP
+          example: IN_APP
+        source:
+          type: string
+          example: booking-service
+        entityId:
+          type: string
+          example: BK-1001
+        entityType:
+          type: string
+          example: BOOKING
+        actorUserId:
+          type: string
+          example: 67d7d4dcf89bc5fbeb0bf999
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            bookingId: BK-1001
+            eventTitle: Spring Gala
+            amount: 2500
+            currency: LKR
+    EventNotificationResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 2
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'

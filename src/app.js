@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
-const swaggerDocument = YAML.load("./swagger/swagger.yaml");
+const swaggerDocument = YAML.load(
+  path.resolve(__dirname, "..", "swagger", "swagger.yaml"),
+);
 
 app.use(cors());
 app.options(/.*/, cors());
