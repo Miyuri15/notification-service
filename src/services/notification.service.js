@@ -4,7 +4,7 @@ const SUPPORTED_EVENT_TYPES = {
   BOOKING_PENDING: {
     title: "Booking created",
     buildMessage: (metadata) =>
-      `Your booking${formatEntitySuffix(metadata.bookingId, "booking")} has been created with pending status${formatEventSuffix(metadata.eventTitle)}.`,
+      `Your booking is pending until the payment. Please proceed to pay${formatEventSuffix(metadata.eventTitle)}.`,
   },
   BOOKING_CONFIRMED: {
     title: "Booking confirmed",
@@ -41,15 +41,35 @@ const SUPPORTED_EVENT_TYPES = {
     buildMessage: (metadata) =>
       `The event${formatNamedSuffix(metadata.eventTitle, "event")} was removed.`,
   },
+  EVENT_DELETED: {
+    title: "Event deleted",
+    buildMessage: (metadata) =>
+      `The event${formatNamedSuffix(metadata.eventTitle, "event")} was deleted.`,
+  },
+  EVENT_SOLD_OUT: {
+    title: "Event sold out",
+    buildMessage: (metadata) =>
+      `All seats are now booked for${formatEventSuffix(metadata.eventTitle)}.`,
+  },
   PAYMENT_RECEIVED: {
     title: "Payment received",
     buildMessage: (metadata) =>
       `Payment${formatEntitySuffix(metadata.paymentId, "payment")} was received successfully${formatAmountSuffix(metadata)}.`,
   },
+  PAYMENT_CHECKOUT_CREATED: {
+    title: "Payment started",
+    buildMessage: (metadata) =>
+      `Your checkout session${formatEntitySuffix(metadata.paymentId, "payment")} has been created${formatAmountSuffix(metadata)}${formatEventSuffix(metadata.eventTitle)}.`,
+  },
   PAYMENT_CANCELLED: {
     title: "Payment cancelled",
     buildMessage: (metadata) =>
       `Payment${formatEntitySuffix(metadata.paymentId, "payment")} was cancelled${formatAmountSuffix(metadata)}.`,
+  },
+  PAYMENT_REFUNDED: {
+    title: "Payment refunded",
+    buildMessage: (metadata) =>
+      `Payment${formatEntitySuffix(metadata.paymentId, "payment")} was refunded${formatAmountSuffix(metadata)}${formatEventSuffix(metadata.eventTitle)}.`,
   },
 };
 
@@ -106,16 +126,17 @@ function dedupeStrings(values) {
 }
 
 async function callUserService(path, options = {}) {
-  if (!process.env.USER_SERVICE_URL) {
-    throw new Error("USER_SERVICE_URL is not configured");
+  if (!process.env.API_GATEWAY_URL) {
+    throw new Error("API_GATEWAY_URL is not configured");
   }
 
-  const response = await fetch(`${process.env.USER_SERVICE_URL}${path}`, {
+  const serviceToken =
+    process.env.INTERNAL_SERVICE_TOKEN || "shared_service_secret";
+  const response = await fetch(`${process.env.API_GATEWAY_URL}${path}`, {
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
-      "x-service-token":
-        process.env.INTERNAL_SERVICE_TOKEN || "shared_service_secret",
+      "x-service-token": serviceToken,
       ...options.headers,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -232,3 +253,4 @@ module.exports = {
   getNotificationsByUser,
   markAsRead,
 };
+
