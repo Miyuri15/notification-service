@@ -100,7 +100,7 @@ function formatBookingStateSuffix(metadata) {
     parts.push(`payment status: ${metadata.paymentStatus}`);
   }
 
-  return parts.length ? ` (${parts.join(', ')})` : "";
+  return parts.length ? ` (${parts.join(", ")})` : "";
 }
 
 function formatAmountSuffix(metadata) {
@@ -247,10 +247,25 @@ async function markAsRead(notificationId, user) {
   return Notification.findOneAndUpdate(filter, { status: "READ" }, { new: true });
 }
 
+async function markAllAsRead(userId, user) {
+  const filter = { userId };
+
+  if (user?.role !== "ADMIN") {
+    filter.userId = user?.id;
+  }
+
+  const result = await Notification.updateMany(filter, { status: "READ" });
+
+  return {
+    matchedCount: result.matchedCount,
+    modifiedCount: result.modifiedCount,
+  };
+}
+
 module.exports = {
   createNotification,
   createNotificationsForEvent,
   getNotificationsByUser,
   markAsRead,
+  markAllAsRead,
 };
-

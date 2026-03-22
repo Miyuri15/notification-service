@@ -54,6 +54,22 @@ async function markNotificationRead(req, res) {
   }
 }
 
+async function markAllNotificationsRead(req, res) {
+  try {
+    if (req.user.role !== "ADMIN" && req.user.id !== req.params.userId) {
+      return res.status(403).json({
+        message: "You are not authorized to update this notification feed",
+      });
+    }
+
+    const result = await notificationService.markAllAsRead(req.params.userId, req.user);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 function healthCheck(req, res) {
   res.json({ status: "OK" });
 }
@@ -63,5 +79,6 @@ module.exports = {
   sendEventNotification,
   getUserNotifications,
   markNotificationRead,
+  markAllNotificationsRead,
   healthCheck,
 };

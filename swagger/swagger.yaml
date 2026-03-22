@@ -5,8 +5,15 @@ info:
   description: API documentation for the Event Booking notification service
 
 servers:
-  - url: http://localhost:8085
-    description: Local development server
+  - url: "{baseUrl}"
+    description: Notification service base URL
+    variables:
+      baseUrl:
+        default: http://localhost:8086
+        description: Local API Gateway URL. Replace with your deployed gateway domain in production.
+        enum:
+          - http://localhost:8086
+          - https://api.yourdomain.com
 
 tags:
   - name: Notification Service
@@ -352,3 +359,4 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Notification'
+
