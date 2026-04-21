@@ -32,7 +32,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
-  res.json({ message: "Notification Service is running" });
+  res.json({ message: "Notification Service is updated now" });
 });
 
 module.exports = app;
